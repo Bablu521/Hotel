@@ -1,6 +1,9 @@
 import express from 'express'
+import dotenv from 'dotenv'
+import initApp from './src/index.router.js'
+dotenv.config()
 const app = express()
-const port = 3000
+const PORT = process.env.PORT || 5000
+initApp(app, express)
 
-app.get('/', (req, res) => res.send('Hello World!'))
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.listen(PORT, () => console.log(`Server is Running on Port ${PORT}!`))
