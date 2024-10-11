@@ -12,3 +12,140 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// User Model
+model User {
+  id          String        @id @default(uuid())
+  userName    String     @unique @db.VarChar(50)
+  email       String     @unique
+  password    String
+  role        Role       @default(user)
+  status      Status     @default(offline)
+  nationality String?    // Optional
+  isConfirmed Boolean    @default(false)
+  phone       String?    // Optional
+  age         Int?       // Optional
+  gender      Gender     @default(male)
+  bookings    Booking[]  // One-to-many relation to Booking
+  reviews     Review[]   // One-to-many relation to Review
+  rooms       Room[]     // One-to-many to Rooms
+  forgetCode  Int?       // Optional
+  refreshToken String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Room Model
+model Room {
+  id            String        @id @default(uuid())
+  roomNumber    Int        @unique
+  description   String    @db.VarChar(200)
+  pricePerNight Float
+  createdBy     User       @relation(fields: [createdById], references: [id])
+  createdById   String        // Foreign key reference to User
+  images        Image[]    // Relation to Image model for storing multiple images
+  status        RoomStatus @default(available)
+  roomType      RoomType
+  bookings      RoomBooking[]  // Many-to-many relation via RoomBooking join table
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// Booking Model
+model Booking {
+  id            String        @id @default(uuid())
+  arrivalDate   DateTime
+  departureDate DateTime
+  numberOfNights Int
+  cost          Float
+  user          User       @relation(fields: [userId], references: [id])
+  userId        String        // Foreign key reference to User
+  coupon        Coupon?    @relation(fields: [couponId], references: [id])
+  couponId      String?       // Optional
+  finalCost     Float    
+  status        BookingStatus @default(pending)
+  rooms         RoomBooking[]  // Many-to-many relation via RoomBooking join table
+  reviews       Review[]   // One-to-many relation to Review
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// Join table for many-to-many relationship between Room and Booking
+model RoomBooking {
+  id        String      @id @default(uuid())
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Review Model
+model Review {
+  id        String      @id @default(uuid())
+  rating    Int         @db.Integer @default(1) 
+  comment   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Image Model (for storing Room images)
+model Image {
+  id        String      @id @default(uuid())
+  url       String
+  cloudId   String
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Coupon Model
+model Coupon {
+  id        String      @id @default(uuid())
+  code      String      @unique
+  discount  Int         @db.Integer @default(0) 
+  bookings  Booking[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+// Enums for fields like status, role, etc.
+enum Gender {
+  male
+  female
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum Status {
+  online
+  offline
+  blocked
+}
+
+enum RoomStatus {
+  available
+  booked
+  pending
+}
+
+enum RoomType {
+  single
+  double
+  suite
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
